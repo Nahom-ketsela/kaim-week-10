@@ -117,3 +117,4 @@ def plot_change_points(df: pd.DataFrame, breakpoints: list) -> None:
     rpt.display(price_array, breakpoints)
     plt.title("Detected Change Points in Brent Oil Price")
     plt.show()
+
