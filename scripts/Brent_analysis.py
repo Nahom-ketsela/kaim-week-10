@@ -15,7 +15,7 @@ def load_data(file_path: str) -> pd.DataFrame:
     :return: A pandas DataFrame with columns ["Date", "Price"].
     """
     df = pd.read_csv(file_path, parse_dates=["Date"], dayfirst=True)
-    print("Loaded Sucessfully. \n") 
+    print("Loaded Sucessfully.✅ \n") 
     return df
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -69,7 +69,6 @@ def check_stationarity(df: pd.DataFrame) -> None:
 
 
 # Time Series Modeling (ARIMA)
-
 def fit_arima_model(df: pd.DataFrame, order=(1,1,1)):
     """
     Fits an ARIMA model with the specified order.
@@ -78,9 +77,17 @@ def fit_arima_model(df: pd.DataFrame, order=(1,1,1)):
     :param order: (p, d, q) tuple for ARIMA model parameters.
     :return: Fitted ARIMA model results.
     """
+    # Ensure "Date" is in datetime format and set it as the index
+    df["Date"] = pd.to_datetime(df["Date"])
     df_ts = df.set_index("Date")
+
+    # Set frequency (assuming daily data)
+    df_ts = df_ts.asfreq('D')  
+
+    # Fit ARIMA model
     model = sm.tsa.ARIMA(df_ts["Price"], order=order)
     results = model.fit()
+    
     return results
 
 
