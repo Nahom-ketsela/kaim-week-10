@@ -15,7 +15,7 @@ def load_data(file_path: str) -> pd.DataFrame:
     :return: A pandas DataFrame with columns ["Date", "Price"].
     """
     df = pd.read_csv(file_path, parse_dates=["Date"], dayfirst=True)
-    print("Loaded Sucessfully.✅ \n") 
+    print("Loaded Sucessfully. \n") 
     return df
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -118,3 +118,25 @@ def plot_change_points(df: pd.DataFrame, breakpoints: list) -> None:
     plt.title("Detected Change Points in Brent Oil Price")
     plt.show()
 
+# saved the results from the analysis to a CSV file
+def save_results_to_csv(df: pd.DataFrame, change_points: list, arima_results, output_path="analysis_results.csv"):
+    """
+    Saves analysis results (change points and ARIMA summary) to a CSV file.
+    
+    :param df: DataFrame containing price data.
+    :param change_points: List of detected change points.
+    :param arima_results: ARIMA model results.
+    :param output_path: File path for output CSV.
+    """
+    # Convert change points to dates
+    change_dates = [df.iloc[idx]["Date"] for idx in change_points if idx < len(df)]
+    
+    # Save ARIMA Summary to text
+    with open(output_path.replace('.csv', '.txt'), 'w') as f:
+        f.write(str(arima_results.summary()))
+
+    # Save change points and summary to CSV
+    results_df = pd.DataFrame({"Change Point Dates": change_dates})
+    results_df.to_csv(output_path, index=False)
+    
+    print(f"Results saved to {output_path} and ARIMA summary saved to {output_path.replace('.csv', '.txt')}")
