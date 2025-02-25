@@ -1,5 +1,3 @@
-#  Import Required Libraries
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,28 +20,50 @@ def load_data(file_path: str) -> pd.DataFrame:
     print(f"Data Loaded Successfully from {file_path}!")
     return df
 
-def load_gdp_data(gdp_file: str, method="interpolate") -> pd.DataFrame:
+def load_gdp_data(gdp_file: str) -> pd.DataFrame:
     """
     Processes annual GDP data to match daily oil price data.
+    Assigns the same GDP value to all dates within a given year.
+    
     :param gdp_file: Path to the GDP dataset
-    :param method: "interpolate" (convert to monthly/daily) or "repeat" (assign annual value to each day)
-    :return: Processed GDP dataset
+    :return: Processed GDP dataset with daily values for each year.
     """
+    # Load the GDP data
     gdp_df = pd.read_csv(gdp_file)
 
-    # Convert 'Year' column to datetime (set to January 1st of each year)
-    gdp_df["Year"] = pd.to_datetime(gdp_df["Year"].astype(str) + "-01-01")
-    gdp_df.set_index("Year", inplace=True)
+    # Clean the data: Remove non-numeric characters ($, B, %, commas)
+    gdp_df["GDP"] = gdp_df["GDP"].replace({r'\$': '', 'B': '', ',': ''}, regex=True).astype(float)
+    gdp_df["GDP per Capita"] = gdp_df["GDP per Capita"].replace({r'\$': '', ',': ''}, regex=True).astype(float)
+    gdp_df["Growth"] = gdp_df["Growth"].replace({'%': ''}, regex=True).astype(float)
 
-    if method == "interpolate":
-        gdp_df = gdp_df.resample('M').interpolate()  # Convert annual to monthly
-        print("GDP Data Converted to Monthly Frequency via Interpolation.")
-    elif method == "repeat":
-        print("GDP Data Assigned to Each Day in Corresponding Year.")
-    else:
-        raise ValueError("Method must be 'interpolate' or 'repeat'.")
-    
+    # Convert 'Year' column to datetime
+    gdp_df["Year"] = pd.to_datetime(gdp_df["Year"], format='%Y')
+
+    # Expand GDP values to all days within the year
+    gdp_df = gdp_df.set_index("Year").resample("D").ffill()
+
+    print("\nGDP Data Expanded to Daily Frequency:")
+    print(gdp_df.head())
+
     return gdp_df
+
+
+def merge_oil_gdp(oil_df: pd.DataFrame, gdp_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Merges daily oil price data with annual GDP data.
+    Ensures that each oil price entry gets the correct GDP value from its corresponding year.
+    
+    :param oil_df: Oil price dataset (daily frequency)
+    :param gdp_df: GDP dataset with values expanded to daily frequency
+    :return: Merged dataset
+    """
+    # Merge using the index (Date for oil, Year expanded to daily for GDP)
+    merged_df = oil_df.merge(gdp_df, left_index=True, right_index=True, how="left")
+
+    print("\nMerged dataset preview:")
+    print(merged_df.head())
+
+    return merged_df
 
 
 # Exploratory Data Analysis (EDA)
