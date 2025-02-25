@@ -9,6 +9,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 
 # Data Loading & Preprocessing
@@ -155,9 +156,52 @@ def train_lstm(df: pd.DataFrame, lookback=60, epochs=20, batch_size=16):
     model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, verbose=1)
     return model, scaler
 
+# function for backtesting LSTM model
+def backtest_lstm(model, data, scaler, lookback=60):
+    """Function to backtest LSTM predictions"""
+    
+    data_scaled = scaler.transform(data.values)
+    
+    predictions = []
+    
+    for i in range(lookback, len(data)):
+        # Prepare the input sequence
+        sequence = data_scaled[i-lookback:i, :]
+        
+        # Make prediction for the next time step
+        predicted = model.predict(sequence.reshape(1, lookback, data.shape[1]), verbose=0)  
+        predictions.append(predicted[0, 0])
+
+    # Fix inverse transform issue
+    predictions_rescaled = scaler.inverse_transform(
+        np.concatenate([np.array(predictions).reshape(-1, 1), np.zeros((len(predictions), 1))], axis=1)
+    )[:, 0]  # Extract only the first column (Price)
+
+    # Plot results for comparison
+    plt.plot(data.index[lookback:], data["Price"].iloc[lookback:], label="Actual")
+    plt.plot(data.index[lookback:], predictions_rescaled, label="Predicted")
+    plt.legend()
+    plt.show()
+    
+    return predictions_rescaled
+
+
+#evaluate LSTM model
+def evaluate_lstm(y_actual, y_pred):
+    """Evaluates the LSTM model using RMSE, MAE, and R²."""
+    rmse = np.sqrt(mean_squared_error(y_actual, y_pred))
+    mae = mean_absolute_error(y_actual, y_pred)
+    r2 = r2_score(y_actual, y_pred)
+    
+    print(f"RMSE: {rmse:.4f}")
+    print(f"MAE: {mae:.4f}")
+    print(f"R² Score: {r2:.4f}")
+    
+    return {"RMSE": rmse, "MAE": mae, "R2": r2}
+
+
 
 #  Save & Export Results
-
 def save_results_to_csv(df: pd.DataFrame, filename="commodity_gdp_analysis_results.csv"):
     """Saves model outputs to CSV."""
     df.to_csv(filename)
