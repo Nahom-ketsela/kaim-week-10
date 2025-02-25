@@ -86,11 +86,22 @@ def correlation_analysis(df: pd.DataFrame):
     plt.title("Correlation Matrix")
     plt.show()
 
+
 def check_stationarity(df: pd.DataFrame, column: str) -> bool:
-    """Performs Augmented Dickey-Fuller Test."""
-    result = adfuller(df[column])
+    """Performs Augmented Dickey-Fuller Test after handling NaNs and Infs."""
+    
+    # Drop NaN and Infinite values
+    series = df[column].replace([np.inf, -np.inf], np.nan).dropna()
+
+    if series.empty:
+        print(f"Column {column} is empty after removing NaNs/Infs. Cannot perform ADF test.")
+        return False
+    
+    # Perform ADF test
+    result = adfuller(series)
     print(f"ADF Statistic for {column}: {result[0]}")
     print(f"p-value: {result[1]}")
+    
     return result[1] <= 0.05  # Returns True if stationary
 
 
