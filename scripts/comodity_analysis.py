@@ -203,6 +203,6 @@ def evaluate_lstm(y_actual, y_pred):
 
 #  Save & Export Results
 def save_results_to_csv(df: pd.DataFrame, filename="commodity_gdp_analysis_results.csv"):
-    """Saves model outputs to CSV."""
+    """Saves merged df to CSV."""
     df.to_csv(filename)
     print(f"Results saved to {filename}")
