@@ -68,20 +68,26 @@ def get_historical_prices():
 
 
 def generate_predictions(data_subset):
-    """Generates predictions for the LSTM model."""
-    # Scale the input features
-    data_scaled = scaler.transform(data_subset)
-    
-    # Reshape the data for LSTM input: (samples, time_steps, features)
-    data_scaled = np.expand_dims(data_scaled, axis=0)
-    
-    # Generate predictions
-    predictions = lstm_model.predict(data_scaled)
-    
-    # Inverse transform to get predictions back in the original price scale
-    predictions = scaler.inverse_transform(predictions)
-    
-    return predictions.flatten()  # Flatten to a 1D array
+    """Generates predictions for each row in the dataset."""
+    data_scaled = scaler.transform(data_subset)  # Scale all data
+
+    predictions = []
+    for i in range(len(data_scaled)):  # Iterate over each row
+        input_data = np.expand_dims(data_scaled[i], axis=(0, 1))  # Reshape for LSTM: (1, 1, features)
+        pred = lstm_model.predict(input_data)[0, 0]  # Predict and extract value
+        predictions.append(pred)
+
+    # Convert list to numpy array
+    predictions = np.array(predictions).reshape(-1, 1)  # Reshape to match scaler expectations
+
+    # Create a placeholder array with the same shape as input (Price, GDP)
+    predictions_padded = np.zeros((len(predictions), 2))  
+    predictions_padded[:, 0] = predictions[:, 0]  # Assign predicted prices
+
+    # Inverse transform the predictions (restore original scale)
+    predictions_inverse = scaler.inverse_transform(predictions_padded)[:, 0]  # Extract only price column
+
+    return predictions_inverse  # Return full array of predicted prices
 
 
 def evaluate_lstm(y_actual, y_pred):
